@@ -11,6 +11,7 @@ namespace PruebaProgreso1_Navarrete.Models
         public DateTime FechaSalida { get; set; }
         [DataType(DataType.Currency)]
         public decimal Precio { get; set; }
-
+        public int ClienteId { get; set; }
+        public Cliente Cliente { get; set; }
     }
 }
