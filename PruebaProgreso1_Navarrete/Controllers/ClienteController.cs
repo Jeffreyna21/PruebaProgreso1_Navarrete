@@ -1,42 +1,68 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using PruebaProgreso1_Navarrete.Models;
 
 namespace PruebaProgreso1_Navarrete.Controllers
 {
     public class ClienteController : Controller
     {
-        // GET: Cliente
-        public ActionResult Index()
+        private readonly PruebaProgreso1_NavarreteContextSQLServer _context;
+
+        public ClienteController(PruebaProgreso1_NavarreteContextSQLServer context)
         {
-            return View();
+            _context = context;
+        }
+        // GET: Cliente
+        public async Task<IActionResult> Index()
+        {
+            var PruebaProgreso1_NavarreteContextSQLServer = _context.Cliente.Include(e => e.planRecompensa);
+            return View(await PruebaProgreso1_NavarreteContextSQLServer.ToListAsync());
         }
 
         // GET: Cliente/Details/5
-        public ActionResult Details(int id)
+        public async Task<IActionResult> Details(int? id)
         {
-            return View();
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var cliente = await _context.Cliente
+                .Include(e => e.planRecompensa)
+                .FirstOrDefaultAsync(m => m.Id == id);
+            if (cliente == null)
+            {
+                return NotFound();
+            }
+
+            return View(cliente);
         }
 
+
         // GET: Cliente/Create
-        public ActionResult Create()
+        public IActionResult Create()
         {
+            ViewData["Reserva"] = new SelectList(_context.Set<Reserva>(), "Id", "Nombre");
             return View();
         }
 
         // POST: Cliente/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<IActionResult> Create([Bind("Id,Nombre,Apellido,FechaNacimiento,Saldo,EsVIP")] Cliente cliente)
         {
-            try
+            if (ModelState.IsValid)
             {
+                _context.Add(cliente);
+                await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            ViewData["CarreraId"] = new SelectList(_context.Set<Reserva>(), "Id", "Nombre", cliente.planRecompensa);
+            return View(cliente);
         }
+
 
         // GET: Cliente/Edit/5
         public ActionResult Edit(int id)
@@ -45,20 +71,51 @@ namespace PruebaProgreso1_Navarrete.Controllers
         }
 
         // POST: Cliente/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<IActionResult> Edit(int? id)
         {
-            try
+            if (id == null)
             {
+                return NotFound();
+            }
+
+            var cliente = await _context.Cliente.FindAsync(id);
+            if (cliente == null)
+            {
+                return NotFound();
+            }
+            ViewData["PlanRecompensa"] = new SelectList(_context.Set<Reserva>(), "Id", "Id", cliente.planRecompensa);
+            return View(cliente);
+        }
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Nombre,Apellido,FechaNacimiento,Saldo,PlanRecompensa")] Cliente cliente)
+        {
+            if (id != cliente.Id)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(cliente);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ClienteExists(cliente.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            ViewData["CarreraId"] = new SelectList(_context.Set<Reserva>(), "Id", "Id", cliente.planRecompensa);
+            return View(cliente);
         }
-
         // GET: Cliente/Delete/5
         public ActionResult Delete(int id)
         {
